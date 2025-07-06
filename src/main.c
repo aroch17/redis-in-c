@@ -68,7 +68,6 @@ int main() {
 	buf[bytes_received] = '\0';
 
 	if (!strcmp(buf, "*1\r\n$4\r\nPING\r\n")) {
-		printf("PING RECEIVED!\n");
 		send(client_fd, REDIS_PONG, strlen(REDIS_PONG), 0);
 	}
 	
