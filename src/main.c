@@ -53,6 +53,9 @@ int main() {
 	
 	client_fd = accept(server_fd, (struct sockaddr *) &client_addr, &client_addr_len);
 	printf("Client connected\n");
+
+	// Task: Respond to PING
+	// Steps: Receive bytes from client -> Parse request -> Send response
 	
 	close(server_fd);
 
