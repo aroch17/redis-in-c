@@ -8,6 +8,7 @@
 #include <unistd.h>
 
 #define BUF_SIZE 4096
+#define REDIS_PONG "+PONG\r\n"
 
 int main() {
 	// Disable output buffering
@@ -68,8 +69,7 @@ int main() {
 
 	if (!strcmp(buf, "*1\r\n$4\r\nPING\r\n")) {
 		printf("PING RECEIVED!\n");
-		char* resp = "+PONG\r\n";
-		send(client_fd, resp, strlen(resp), 0);
+		send(client_fd, REDIS_PONG, strlen(REDIS_PONG), 0);
 	}
 	
 	close(server_fd);
