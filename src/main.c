@@ -7,6 +7,8 @@
 #include <errno.h>
 #include <unistd.h>
 
+#define BUF_SIZE 4096
+
 int main() {
 	// Disable output buffering
 	setbuf(stdout, NULL);
@@ -56,6 +58,13 @@ int main() {
 
 	// Task: Respond to PING
 	// Steps: Receive bytes from client -> Parse request -> Send response
+
+	// Receive bytes
+	char buf[BUF_SIZE];
+	ssize_t bytes_received;
+	// only read BUF_SIZE - 1 bytes -> last byte for '\0'
+	bytes_received = recv(client_fd, buf, BUF_SIZE - 1, 0);
+	buf[bytes_received] = '\0';
 	
 	close(server_fd);
 
