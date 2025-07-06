@@ -65,6 +65,12 @@ int main() {
 	// only read BUF_SIZE - 1 bytes -> last byte for '\0'
 	bytes_received = recv(client_fd, buf, BUF_SIZE - 1, 0);
 	buf[bytes_received] = '\0';
+
+	if (!strcmp(buf, "*1\r\n$4\r\nPING\r\n")) {
+		printf("PING RECEIVED!\n");
+		char* resp = "+PONG\r\n";
+		send(client_fd, resp, strlen(resp), 0);
+	}
 	
 	close(server_fd);
 
