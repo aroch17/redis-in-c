@@ -15,7 +15,7 @@ int main() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	printf("Logs from your program will appear here!\n");
 	
-	int server_fd, client_addr_len;
+	int server_fd, client_addr_len, client_fd;
 	struct sockaddr_in client_addr;
 	
 	server_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -51,7 +51,7 @@ int main() {
 	printf("Waiting for a client to connect...\n");
 	client_addr_len = sizeof(client_addr);
 	
-	accept(server_fd, (struct sockaddr *) &client_addr, &client_addr_len);
+	client_fd = accept(server_fd, (struct sockaddr *) &client_addr, &client_addr_len);
 	printf("Client connected\n");
 	
 	close(server_fd);
