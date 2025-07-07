@@ -74,44 +74,74 @@ int main() {
 		return 1;
 	}
 
+	printf("Waiting for a client to connect...\n");
+
 	int epoll_fd = epoll_create1(0);
 	if (epoll_fd == -1) {
 		perror("epoll_create");
 		exit(1);
 	}
 
+	// add server fd to epoll list
 	ev.events = EPOLLIN;
 	ev.data.fd = server_fd;
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, server_fd, &ev) == -1) {
 		perror("epoll_ctl: server_fd");
 		exit(1);
 	}
-	
-	printf("Waiting for a client to connect...\n");
+
 	client_addr_len = sizeof(client_addr);
-	
-	client_fd = accept(server_fd, (struct sockaddr *) &client_addr, &client_addr_len);
-	printf("Client connected\n");
-
-	char buf[BUF_SIZE];
-	ssize_t bytes_received;
-
 	int running = 1;
 	while (running) {
-		// Receive bytes
-		// only read BUF_SIZE - 1 bytes -> last byte for '\0'
-		bytes_received = recv(client_fd, buf, BUF_SIZE - 1, 0);
-		if (bytes_received == -1) {
-			perror("recv");
+		nfds = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
+		if (nfds == -1) {
+			perror("epoll_wait");
 			exit(1);
 		}
-		
-		buf[bytes_received] = '\0';
-	
-		if (!strcmp(buf, "*1\r\n$4\r\nPING\r\n")) {
-			send(client_fd, REDIS_PONG, strlen(REDIS_PONG), 0);
+
+		int n;
+		for (n = 0; n < nfds; n++) {
+			// add new connections to epoll list
+			if (events[n].data.fd == server_fd) {
+				client_fd = accept(server_fd, (struct sockaddr *) &client_addr, &client_addr_len);
+				if (client_fd == -1) {
+					if (errno == EAGAIN || errno == EWOULDBLOCK) {
+						continue;
+					}
+					perror("accept");
+					exit(1);
+				}
+				set_nonblocking(client_fd);
+				ev.events = EPOLLIN | EPOLLET;
+				ev.data.fd = client_fd;
+				if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &ev) == -1) {
+					perror("epoll_ctl: client_fd");
+					exit(1);
+				}
+				printf("Client connected!\n");
+			} 
 		}
 	}
+
+	// char buf[BUF_SIZE];
+	// ssize_t bytes_received;
+
+	// int running = 1;
+	// while (running) {
+	// 	// Receive bytes
+	// 	// only read BUF_SIZE - 1 bytes -> last byte for '\0'
+	// 	bytes_received = recv(client_fd, buf, BUF_SIZE - 1, 0);
+	// 	if (bytes_received == -1) {
+	// 		perror("recv");
+	// 		exit(1);
+	// 	}
+		
+	// 	buf[bytes_received] = '\0';
+	
+	// 	if (!strcmp(buf, "*1\r\n$4\r\nPING\r\n")) {
+	// 		send(client_fd, REDIS_PONG, strlen(REDIS_PONG), 0);
+	// 	}
+	// }
 
 	close(client_fd);
 	close(server_fd);
