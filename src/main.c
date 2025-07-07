@@ -71,6 +71,7 @@ int main() {
 		send(client_fd, REDIS_PONG, strlen(REDIS_PONG), 0);
 	}
 	
+	close(client_fd);
 	close(server_fd);
 
 	return 0;
