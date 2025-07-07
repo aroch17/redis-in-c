@@ -120,7 +120,7 @@ int main() {
 				printf("Client connected!\n");
 			}
 			else {
-				// data available for reading
+				// socket available for reading
 				if (events[n].events == EPOLLIN) {
 					char buf[BUF_SIZE];
 					ssize_t bytes_received;
@@ -131,11 +131,29 @@ int main() {
 						perror("recv");
 						exit(1);
 					}
-
 					buf[bytes_received] = '\0';
-					send(events[n].data.fd, REDIS_PONG, strlen(REDIS_PONG), 0);
+					
+					// change event type -> ready to write data
+					ev.events = EPOLLOUT;
+					ev.data.fd = events[n].data.fd;
+					if (epoll_ctl(epoll_fd, EPOLL_CTL_MOD, events[n].data.fd, &ev) == -1) {
+						perror("epoll_ctl: client_fd");
+						exit(1);
+					}
 				}
-			} 
+				// socket available for writing
+				else if (events[n].events == EPOLLOUT) {
+					send(events[n].data.fd, REDIS_PONG, strlen(REDIS_PONG), 0);
+					
+					// switch conn back to reading -> persistent connections
+					ev.events = EPOLLIN | EPOLLET;
+					ev.data.fd = events[n].data.fd;
+					if (epoll_ctl(epoll_fd, EPOLL_CTL_MOD, events[n].data.fd, &ev) == -1) {
+						perror("epoll_ctl: client_fd");
+						exit(1);
+					}
+				}
+			}
 		}
 	}
 
