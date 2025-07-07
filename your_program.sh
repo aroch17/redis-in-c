@@ -12,14 +12,22 @@ set -e # Exit early if any commands fail
 #
 # - Edit this to change how your program compiles locally
 # - Edit .codecrafters/compile.sh to change how your program compiles remotely
+
+# Use different build directory for Linux
+if [ -f /.dockerenv ] || [ "$(uname)" = "Linux" ]; then
+    BUILD_DIR="build-linux"
+else
+    BUILD_DIR="build"
+fi
+
 (
   cd "$(dirname "$0")" # Ensure compile steps are run within the repository directory
-  cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake
-  cmake --build ./build
+  cmake -B $BUILD_DIR -S . -DCMAKE_TOOLCHAIN_FILE=${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake
+  cmake --build ./$BUILD_DIR
 )
 
 # Copied from .codecrafters/run.sh
 #
 # - Edit this to change how your program runs locally
 # - Edit .codecrafters/run.sh to change how your program runs remotely
-exec $(dirname $0)/build/redis "$@"
+exec $(dirname $0)/$BUILD_DIR/redis "$@"
