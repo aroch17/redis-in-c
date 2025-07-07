@@ -7,10 +7,30 @@
 #include <errno.h>
 #include <unistd.h>
 #include <sys/epoll.h>
+#include <fcntl.h>
 
 #define MAX_EVENTS 10
 #define BUF_SIZE 4096
 #define REDIS_PONG "+PONG\r\n"
+
+int set_nonblocking(int sockfd) {
+	int flags, result;
+	flags = fcntl(sockfd, F_GETFL, 0);
+	if (flags == -1) {
+		perror("fcntl - F_GETFL");
+		return -1;
+	}
+
+	flags |= O_NONBLOCK;
+	result = fcntl(sockfd, F_SETFL, flags);
+	if (result == -1) {
+		perror("fcntl - F_SETFL");
+		return -1;
+	}
+
+	return 0;
+}
+
 
 int main() {
 	// Disable output buffering
