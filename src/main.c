@@ -6,6 +6,7 @@
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
+#include <sys/epoll.h>
 
 #define BUF_SIZE 4096
 #define REDIS_PONG "+PONG\r\n"
@@ -50,6 +51,14 @@ int main() {
 		printf("Listen failed: %s \n", strerror(errno));
 		return 1;
 	}
+
+	int epoll_fd = epoll_create1(0);
+	if (epoll_fd == -1) {
+		perror("epoll_create");
+		exit(1);
+	}
+
+	
 	
 	printf("Waiting for a client to connect...\n");
 	client_addr_len = sizeof(client_addr);
