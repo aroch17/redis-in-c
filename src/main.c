@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <sys/epoll.h>
 
+#define MAX_EVENTS 10
 #define BUF_SIZE 4096
 #define REDIS_PONG "+PONG\r\n"
 
@@ -19,8 +20,9 @@ int main() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	printf("Logs from your program will appear here!\n");
 	
-	int server_fd, client_addr_len, client_fd;
+	int server_fd, client_addr_len, client_fd, nfds;
 	struct sockaddr_in client_addr;
+	struct epoll_event ev, events[MAX_EVENTS];
 	
 	server_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (server_fd == -1) {
@@ -58,7 +60,12 @@ int main() {
 		exit(1);
 	}
 
-	
+	ev.events = EPOLLIN;
+	ev.data.fd = server_fd;
+	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, server_fd, &ev) == -1) {
+		perror("epoll_ctl: server_fd");
+		exit(1);
+	}
 	
 	printf("Waiting for a client to connect...\n");
 	client_addr_len = sizeof(client_addr);
