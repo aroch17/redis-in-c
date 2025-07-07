@@ -57,17 +57,26 @@ int main() {
 	client_fd = accept(server_fd, (struct sockaddr *) &client_addr, &client_addr_len);
 	printf("Client connected\n");
 
-	// Receive bytes
 	char buf[BUF_SIZE];
 	ssize_t bytes_received;
-	// only read BUF_SIZE - 1 bytes -> last byte for '\0'
-	bytes_received = recv(client_fd, buf, BUF_SIZE - 1, 0);
-	buf[bytes_received] = '\0';
 
-	if (!strcmp(buf, "*1\r\n$4\r\nPING\r\n")) {
-		send(client_fd, REDIS_PONG, strlen(REDIS_PONG), 0);
-	}
+	int running = 1;
+	while (running) {
+		// Receive bytes
+		// only read BUF_SIZE - 1 bytes -> last byte for '\0'
+		bytes_received = recv(client_fd, buf, BUF_SIZE - 1, 0);
+		if (bytes_received == -1) {
+			perror("recv");
+			exit(1);
+		}
+		
+		buf[bytes_received] = '\0';
 	
+		if (!strcmp(buf, "*1\r\n$4\r\nPING\r\n")) {
+			send(client_fd, REDIS_PONG, strlen(REDIS_PONG), 0);
+		}
+	}
+
 	close(client_fd);
 	close(server_fd);
 
