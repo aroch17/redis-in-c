@@ -54,3 +54,4 @@ dkms.conf
 build
 build-linux
 vcpkg_installed
+.vscode
