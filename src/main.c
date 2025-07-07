@@ -31,7 +31,6 @@ int set_nonblocking(int sockfd) {
 	return 0;
 }
 
-
 int main() {
 	// Disable output buffering
 	setbuf(stdout, NULL);
@@ -119,29 +118,26 @@ int main() {
 					exit(1);
 				}
 				printf("Client connected!\n");
+			}
+			else {
+				// data available for reading
+				if (events[n].events == EPOLLIN) {
+					char buf[BUF_SIZE];
+					ssize_t bytes_received;
+					// Receive bytes
+					// only read BUF_SIZE - 1 bytes -> last byte for '\0'
+					bytes_received = recv(events[n].data.fd, buf, BUF_SIZE - 1, 0);
+					if (bytes_received == -1) {
+						perror("recv");
+						exit(1);
+					}
+
+					buf[bytes_received] = '\0';
+					send(events[n].data.fd, REDIS_PONG, strlen(REDIS_PONG), 0);
+				}
 			} 
 		}
 	}
-
-	// char buf[BUF_SIZE];
-	// ssize_t bytes_received;
-
-	// int running = 1;
-	// while (running) {
-	// 	// Receive bytes
-	// 	// only read BUF_SIZE - 1 bytes -> last byte for '\0'
-	// 	bytes_received = recv(client_fd, buf, BUF_SIZE - 1, 0);
-	// 	if (bytes_received == -1) {
-	// 		perror("recv");
-	// 		exit(1);
-	// 	}
-		
-	// 	buf[bytes_received] = '\0';
-	
-	// 	if (!strcmp(buf, "*1\r\n$4\r\nPING\r\n")) {
-	// 		send(client_fd, REDIS_PONG, strlen(REDIS_PONG), 0);
-	// 	}
-	// }
 
 	close(client_fd);
 	close(server_fd);
