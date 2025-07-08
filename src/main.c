@@ -13,6 +13,10 @@
 #define BUF_SIZE 4096
 #define REDIS_PONG "+PONG\r\n"
 
+enum REDIS_DATA_IDENTIFIER {
+	BULK_STRING = '$'
+};
+
 int set_nonblocking(int sockfd) {
 	int flags, result;
 	flags = fcntl(sockfd, F_GETFL, 0);
