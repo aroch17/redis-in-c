@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <sys/epoll.h>
 #include <fcntl.h>
+#include <limits.h>
 
 #define MAX_EVENTS 10
 #define BUF_SIZE 4096
@@ -33,6 +34,37 @@ int set_nonblocking(int sockfd) {
 	}
 
 	return 0;
+}
+
+/*
+Input: Expects a RESP encoded bulk string
+Output: Parsed string contents - allocated on heap
+*/
+char* parseBulkString(char* buf) {
+	int len = strtol(buf + 1, NULL, 10); // +1 to skip over identifier
+	if ((errno == ERANGE && (len == LONG_MAX || len == LONG_MIN)) || (errno != 0 && len == 0)) {
+		perror("strtol");
+		return NULL;
+	}
+
+	char* ret = malloc(len + 1); // +1 for null terminator
+	if (ret == NULL) {
+		printf("Failed to allocate memory\n");
+		return NULL;
+	}
+
+	// find first occurence of \r\n
+	char* ptr = strstr(buf, "\r\n"); 
+	if (ptr == NULL) {
+		printf("Bad string\n");
+		return NULL;
+	}
+	ptr += 2; // +2 to skip over \r\n
+
+	strncpy(ret, ptr, len);
+	ret[len] = '\0';
+	
+	return ret;
 }
 
 int main() {
@@ -149,10 +181,14 @@ int main() {
 					char identifier = buf[0];
 					switch (identifier) {
 						case BULK_STRING:
-							printf("Bulk string\n");
+							char* str = parseBulkString(buf);
+							if (str != NULL) {
+								printf("%s\n", str);
+								free(str);
+							}
 							break;
 						default:
-							printf("Default\n");
+							printf("Invalid input\n");
 							break;
 					}
 					
