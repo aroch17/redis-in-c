@@ -145,6 +145,16 @@ int main() {
 						continue;
 					}
 					buf[bytes_received] = '\0';
+
+					char identifier = buf[0];
+					switch (identifier) {
+						case BULK_STRING:
+							printf("Bulk string\n");
+							break;
+						default:
+							printf("Default\n");
+							break;
+					}
 					
 					// change event type -> ready to write data
 					ev.events = EPOLLOUT;
