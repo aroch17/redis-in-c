@@ -117,7 +117,7 @@ int main() {
 					perror("epoll_ctl: client_fd");
 					exit(1);
 				}
-				printf("Client connected!\n");
+				printf("Client connected! FD - %d\n", client_fd);
 			}
 			else {
 				// socket available for reading
@@ -130,6 +130,15 @@ int main() {
 					if (bytes_received == -1) {
 						perror("recv");
 						exit(1);
+					}
+					// client connection closed
+					if (bytes_received == 0) {
+						printf("Client disconnected! FD - %d\n", events[n].data.fd);
+						if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, events[n].data.fd, NULL) == -1) {
+							perror("epoll_ctl: client_fd");
+							exit(1);
+						}
+						continue;
 					}
 					buf[bytes_received] = '\0';
 					
