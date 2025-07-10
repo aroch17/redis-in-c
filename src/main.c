@@ -71,6 +71,15 @@ char* parseBulkString(char* buf) {
 	return ret;
 }
 
+void free_array_contents(char** array) {
+	int i = 0;
+	while (array[i] != NULL) {
+		free(array[i]);
+		i += 1;
+	}
+	free(array);
+}
+
 /*
 Input: Expects a RESP encoded array
 Output: Parsed array contents - double pointer allocated on heap
@@ -93,6 +102,11 @@ char** parseArray(char* buf) {
 	int i;
 	for (i = 0; i < num_items; i++) {
 		ret[i] = parseBulkString(current_bulk_str);
+		if (ret[i] == NULL) {
+			printf("Failed to parse array\n");
+			free_array_contents(ret);
+			return NULL;
+		}
 
 		// last item will not have any more strings after it
 		if (i < num_items - 1) {
@@ -222,6 +236,8 @@ int main() {
 					switch (identifier) {
 						case REDIS_ARRAY:
 							char** items = parseArray(buf);
+							printf("%s\n", items[2]);
+							free_array_contents(items);
 							break;
 						default:
 							printf("Invalid command\n");
