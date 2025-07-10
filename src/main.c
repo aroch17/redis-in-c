@@ -215,8 +215,7 @@ int main() {
 					char buf[BUF_SIZE];
 					ssize_t bytes_received;
 					// Receive bytes
-					// only read BUF_SIZE - 1 bytes -> last byte for '\0'
-					bytes_received = recv(events[n].data.fd, buf, BUF_SIZE - 1, 0);
+					bytes_received = recv(events[n].data.fd, buf, BUF_SIZE - NULL_TERMINATOR_LEN, 0);
 					if (bytes_received == -1) {
 						perror("recv");
 						exit(1);
