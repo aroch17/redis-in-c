@@ -235,7 +235,6 @@ int main() {
 					switch (identifier) {
 						case REDIS_ARRAY:
 							char** items = parseArray(buf);
-							printf("%s\n", items[2]);
 							free_array_contents(items);
 							break;
 						default:
