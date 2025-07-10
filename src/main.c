@@ -209,6 +209,7 @@ int main() {
 	int server_fd, client_addr_len, client_fd, nfds;
 	struct sockaddr_in client_addr;
 	struct epoll_event ev, events[MAX_EVENTS];
+	char* resps[MAX_EVENTS];
 	
 	server_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (server_fd == -1) {
@@ -311,9 +312,9 @@ int main() {
 					char identifier = buf[0];
 					switch (identifier) {
 						case REDIS_ARRAY:
-							char** items = parseArray(buf);
-							char* ret = encodeBulkString(items[1], strlen(items[1]));
-							free_array_contents(items);
+							if ((resps[n] = process_resp_array(buf)) == NULL) {
+								resps[n] = strdup(REDIS_NULL_STRING);
+							}
 							break;
 						default:
 							printf("Invalid command\n");
@@ -330,7 +331,7 @@ int main() {
 				}
 				// socket available for writing
 				else if (events[n].events == EPOLLOUT) {
-					send(events[n].data.fd, REDIS_PONG, strlen(REDIS_PONG), 0);
+					send(events[n].data.fd, resps[n], strlen(resps[n]), 0);
 					
 					// switch conn back to reading -> persistent connections
 					ev.events = EPOLLIN | EPOLLET;
