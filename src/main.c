@@ -12,6 +12,8 @@
 
 #define MAX_EVENTS 10
 #define BUF_SIZE 4096
+#define DELIMITER_LEN 2
+#define IDENTIFIER_LEN 1
 #define REDIS_PONG "+PONG\r\n"
 
 enum REDIS_DATA_IDENTIFIER {
@@ -42,7 +44,7 @@ Input: Expects a RESP encoded bulk string, can supply multiple bulk strings chai
 Output: Parsed string contents - allocated on heap
 */
 char* parseBulkString(char* buf) {
-	int len = strtol(buf + 1, NULL, 10); // +1 to skip over identifier
+	int len = strtol(buf + IDENTIFIER_LEN, NULL, 10);
 	if ((errno == ERANGE && (len == LONG_MAX || len == LONG_MIN)) || (errno != 0 && len == 0)) {
 		perror("strtol");
 		return NULL;
@@ -60,7 +62,7 @@ char* parseBulkString(char* buf) {
 		printf("Bad string\n");
 		return NULL;
 	}
-	ptr += 2; // +2 to skip over \r\n
+	ptr += DELIMITER_LEN;
 
 	strncpy(ret, ptr, len);
 	ret[len] = '\0';
@@ -73,7 +75,7 @@ Input: Expects a RESP encoded array
 Output: Parsed array contents - double pointer allocated on heap
 */
 char** parseArray(char* buf) {
-	int num_items = strtol(buf + 1, NULL, 10); // +1 to skip over identifier
+	int num_items = strtol(buf + IDENTIFIER_LEN, NULL, 10);
 	if ((errno == ERANGE && (num_items == LONG_MAX || num_items == LONG_MIN)) || (errno != 0 && num_items == 0)) {
 		perror("strtol");
 		return NULL;
@@ -93,7 +95,7 @@ char** parseArray(char* buf) {
 
 		// last item will not have any more strings after it
 		if (i < num_items - 1) {
-			current_bulk_str = strchr(current_bulk_str + 1, '$');
+			current_bulk_str = strchr(current_bulk_str + IDENTIFIER_LEN, '$');
 			if (current_bulk_str == NULL) {
 				printf("Invalid input\n");
 				return NULL;
