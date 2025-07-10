@@ -17,7 +17,7 @@
 #define IDENTIFIER_LEN 1
 #define NULL_TERMINATOR_LEN 1
 #define REDIS_PONG "+PONG\r\n"
-#define REDIS_NULL_STRING "$0\r\n\r\n"
+#define REDIS_NULL_STRING "-1\r\n"
 
 enum REDIS_DATA_IDENTIFIER {
 	REDIS_BULK_STRING = '$',
