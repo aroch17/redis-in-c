@@ -14,6 +14,7 @@
 #define BUF_SIZE 4096
 #define DELIMITER_LEN 2
 #define IDENTIFIER_LEN 1
+#define NULL_TERMINATOR_LEN 1
 #define REDIS_PONG "+PONG\r\n"
 
 enum REDIS_DATA_IDENTIFIER {
@@ -81,7 +82,7 @@ char** parseArray(char* buf) {
 		return NULL;
 	}
 
-	char** ret = malloc(sizeof(char*) * num_items);
+	char** ret = malloc(sizeof(char*) * (num_items + NULL_TERMINATOR_LEN));
 	// find starting positon of bulk string
 	char* current_bulk_str = strchr(buf, '$');
 	if (current_bulk_str == NULL) {
@@ -102,6 +103,7 @@ char** parseArray(char* buf) {
 			}
 		}
 	}
+	ret[num_items] = NULL;
 	return ret;
 }
 
