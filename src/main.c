@@ -38,7 +38,7 @@ int set_nonblocking(int sockfd) {
 }
 
 /*
-Input: Expects a RESP encoded bulk string
+Input: Expects a RESP encoded bulk string, can supply multiple bulk strings chained together - parses the first one
 Output: Parsed string contents - allocated on heap
 */
 char* parseBulkString(char* buf) {
@@ -69,24 +69,6 @@ char* parseBulkString(char* buf) {
 }
 
 /*
-Input: Expects start and end pointers of the substring
-Output: Returns a substring - heap allocated
-*/
-char* makeSubstring(char* bulk_string_start, char* bulk_string_end) {
-	if (bulk_string_end < bulk_string_start) {
-		printf("Invalid pointers\n");
-		return NULL;
-	}
-
-	size_t length = bulk_string_end - bulk_string_start + 1;
-	char* temp = malloc(length + 1); // +1 for the null-terminator
-	strncpy(temp, bulk_string_start, length);
-	temp[length] = '\0';
-
-	return temp;
-}
-
-/*
 Input: Expects a RESP encoded array
 Output: Parsed array contents - double pointer allocated on heap
 */
@@ -99,39 +81,24 @@ char** parseArray(char* buf) {
 
 	char** ret = malloc(sizeof(char*) * num_items);
 	// find starting positon of bulk string
-	char* bulk_string_start = strchr(buf, '$');
-	if (bulk_string_start == NULL) {
+	char* current_bulk_str = strchr(buf, '$');
+	if (current_bulk_str == NULL) {
 		printf("Invalid input\n");
 		return NULL;
 	}
 
-	char* bulk_string_end;
 	int i;
 	for (i = 0; i < num_items; i++) {
-		// last string will not have any more strings after it
-		if (i == num_items - 1) {
-			ret[i] = parseBulkString(bulk_string_start);
-			break;
-		}
+		ret[i] = parseBulkString(current_bulk_str);
 
-		// find starting positon of next bulk string
-		bulk_string_end = strchr(bulk_string_start + 1, '$');
-		if (bulk_string_end == NULL) {
-			printf("Invalid input\n");
-			return NULL;
+		// last item will not have any more strings after it
+		if (i < num_items - 1) {
+			current_bulk_str = strchr(current_bulk_str + 1, '$');
+			if (current_bulk_str == NULL) {
+				printf("Invalid input\n");
+				return NULL;
+			}
 		}
-		// -1 since we do not want to include the $ of the second bulk string
-		bulk_string_end -= 1;
-
-		char* temp;
-		if ((temp = makeSubstring(bulk_string_start, bulk_string_end)) == NULL) {
-			return NULL;
-		}
-		ret[i] = parseBulkString(temp);
-		free(temp);
-
-		// update to start of next bulk string
-		bulk_string_start = bulk_string_end + 1;
 	}
 	return ret;
 }
