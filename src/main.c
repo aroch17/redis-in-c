@@ -16,6 +16,7 @@
 #define IDENTIFIER_LEN 1
 #define NULL_TERMINATOR_LEN 1
 #define REDIS_PONG "+PONG\r\n"
+#define REDIS_NULL_STRING "$0\r\n\r\n"
 
 enum REDIS_DATA_IDENTIFIER {
 	REDIS_BULK_STRING = '$',
@@ -119,6 +120,47 @@ char** parseArray(char* buf) {
 	}
 	ret[num_items] = NULL;
 	return ret;
+}
+
+/*
+Input - String to be encoded
+				Length of string to be encoded
+Output - RESP encoded string - heap allocated
+				 Returns RESP2 NULL string on error
+*/
+char* encodeBulkString(char* str, size_t len_str) {
+	// special case if len_str == 0 -> return RESP2 NULL string
+	// strndup as user expects heap allocated string
+	if (len_str == 0) {
+		return strndup(REDIS_NULL_STRING, strlen(REDIS_NULL_STRING));
+	}
+
+	if (str == NULL) {
+		printf("Invalid str\n");
+		return NULL;
+	}
+
+	int len_digits;
+	if ((len_digits = snprintf(NULL, 0, "%zu", len_str)) < 0) {
+		printf("Failed to calculate digit len\n");
+		return NULL;
+	}
+
+	size_t encoded_str_len = (IDENTIFIER_LEN + len_digits) + len_str + (2 * DELIMITER_LEN) + NULL_TERMINATOR_LEN;
+	char* encoded_str = malloc(encoded_str_len);
+	if (encoded_str == NULL) {
+		printf("Failed to allocate memory\n");
+		return NULL;
+	}
+
+	int bytes_written;
+	if ((bytes_written = snprintf(encoded_str, encoded_str_len, "$%zu\r\n%s\r\n", len_str, str)) < 0) {
+		printf("Failed to encode\n");
+		free(encoded_str);
+		return NULL;
+	}
+
+	return encoded_str;
 }
 
 int main() {
@@ -235,6 +277,7 @@ int main() {
 					switch (identifier) {
 						case REDIS_ARRAY:
 							char** items = parseArray(buf);
+							char* ret = encodeBulkString(items[1], strlen(items[1]));
 							free_array_contents(items);
 							break;
 						default:
