@@ -9,6 +9,7 @@
 #include <sys/epoll.h>
 #include <fcntl.h>
 #include <limits.h>
+#include <ctype.h>
 
 #define MAX_EVENTS 10
 #define BUF_SIZE 4096
@@ -161,6 +162,40 @@ char* encodeBulkString(char* str, size_t len_str) {
 	}
 
 	return encoded_str;
+}
+
+/*
+Input: String to be converted to uppercase
+Output: Converts string in place
+*/
+void to_upper_case(char* str) {
+	for(int i = 0; i < strlen(str); i++){
+		str[i] = toupper(str[i]);
+	}
+}
+
+char* process_resp_array(char* buf) {
+	char** items = parseArray(buf);
+	if (items == NULL) {
+		return strdup(REDIS_NULL_STRING);
+	}
+	char* cmd = items[0];
+	to_upper_case(cmd);
+	
+	char* resp;
+	if (!strncmp(cmd, "PING", strlen(cmd))) {
+		resp = REDIS_PONG;
+	}
+	else if (!strncmp(cmd, "ECHO", strlen(cmd))) {
+		resp = encodeBulkString(items[1], strlen(items[1]));
+	}
+	else {
+		printf("Invalid command\n");
+		resp = NULL;
+	}
+
+	free_array_contents(items);
+	return resp;
 }
 
 int main() {
