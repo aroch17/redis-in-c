@@ -51,7 +51,7 @@ char* parseBulkString(char* buf) {
 		return NULL;
 	}
 
-	char* ret = malloc(len + 1); // +1 for null terminator
+	char* ret = malloc(len + NULL_TERMINATOR_LEN);
 	if (ret == NULL) {
 		printf("Failed to allocate memory\n");
 		return NULL;
