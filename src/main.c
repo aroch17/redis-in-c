@@ -10,14 +10,17 @@
 #include <fcntl.h>
 #include <limits.h>
 #include <ctype.h>
+#include <search.h>
 
 #define MAX_EVENTS 10
+#define MAX_NUM_ELEM 128
 #define BUF_SIZE 4096
 #define DELIMITER_LEN 2
 #define IDENTIFIER_LEN 1
 #define NULL_TERMINATOR_LEN 1
 #define REDIS_PONG "+PONG\r\n"
 #define REDIS_NULL_STRING "-1\r\n"
+#define REDIS_OK "+OK\r\n"
 
 enum REDIS_DATA_IDENTIFIER {
 	REDIS_BULK_STRING = '$',
@@ -167,16 +170,38 @@ char* encode_bulk_string(char* str, size_t len_str) {
 char* process_resp_array(char* buf) {
 	char** items = parse_resp_array(buf);
 	if (items == NULL) {
-		return strdup(REDIS_NULL_STRING);
+		return NULL;
 	}
 	char* cmd = items[0];
 	
 	char* resp;
 	if (!strncasecmp(cmd, "PING", strlen(cmd))) {
-		resp = REDIS_PONG;
+		resp = strdup(REDIS_PONG);
 	}
 	else if (!strncasecmp(cmd, "ECHO", strlen(cmd))) {
 		resp = encode_bulk_string(items[1], strlen(items[1]));
+	}
+	else if (!strncasecmp(cmd, "SET", strlen(cmd))) {
+		if (!items[1] || !items[2]) {
+			printf("Incomplete command\n");
+			return NULL;
+		}
+
+		ENTRY e, *ep;
+		e.key = items[1];
+		e.data = items[2];
+		ep = hsearch(e, ENTER);
+		if (ep == NULL && errno == ENOMEM) {
+			printf("Max elements reached\n");
+			return NULL;
+		}
+		
+		if (ep == NULL) {
+			printf("Failed to create entry\n");
+			return NULL;
+		}
+		
+		resp = strdup(REDIS_OK);
 	}
 	else {
 		printf("Invalid command\n");
@@ -199,6 +224,8 @@ int main() {
 	struct sockaddr_in client_addr;
 	struct epoll_event ev, events[MAX_EVENTS];
 	char* resps[MAX_EVENTS];
+	// create key-value store
+	hcreate(MAX_NUM_ELEM);
 	
 	server_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (server_fd == -1) {
@@ -334,6 +361,7 @@ int main() {
 		}
 	}
 
+	hdestroy();
 	close(client_fd);
 	close(server_fd);
 
