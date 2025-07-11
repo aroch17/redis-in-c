@@ -46,7 +46,7 @@ int set_nonblocking(int sockfd) {
 Input: Expects a RESP encoded bulk string, can supply multiple bulk strings chained together - parses the first one
 Output: Parsed string contents - allocated on heap
 */
-char* parseBulkString(char* buf) {
+char* parse_bulk_string(char* buf) {
 	int len = strtol(buf + IDENTIFIER_LEN, NULL, 10);
 	if ((errno == ERANGE && (len == LONG_MAX || len == LONG_MIN)) || (errno != 0 && len == 0)) {
 		perror("strtol");
@@ -86,7 +86,7 @@ void free_array_contents(char** array) {
 Input: Expects a RESP encoded array
 Output: Parsed array contents - double pointer allocated on heap
 */
-char** parseArray(char* buf) {
+char** parse_resp_array(char* buf) {
 	int num_items = strtol(buf + IDENTIFIER_LEN, NULL, 10);
 	if ((errno == ERANGE && (num_items == LONG_MAX || num_items == LONG_MIN)) || (errno != 0 && num_items == 0)) {
 		perror("strtol");
@@ -103,7 +103,7 @@ char** parseArray(char* buf) {
 
 	int i;
 	for (i = 0; i < num_items; i++) {
-		ret[i] = parseBulkString(current_bulk_str);
+		ret[i] = parse_bulk_string(current_bulk_str);
 		if (ret[i] == NULL) {
 			printf("Failed to parse array\n");
 			free_array_contents(ret);
@@ -129,7 +129,7 @@ Input - String to be encoded
 Output - RESP encoded string - heap allocated
 				 Returns RESP2 NULL string on error
 */
-char* encodeBulkString(char* str, size_t len_str) {
+char* encode_bulk_string(char* str, size_t len_str) {
 	// special case if len_str == 0 -> return RESP2 NULL string
 	// strndup as user expects heap allocated string
 	if (len_str == 0) {
@@ -165,7 +165,7 @@ char* encodeBulkString(char* str, size_t len_str) {
 }
 
 char* process_resp_array(char* buf) {
-	char** items = parseArray(buf);
+	char** items = parse_resp_array(buf);
 	if (items == NULL) {
 		return strdup(REDIS_NULL_STRING);
 	}
@@ -176,7 +176,7 @@ char* process_resp_array(char* buf) {
 		resp = REDIS_PONG;
 	}
 	else if (!strncasecmp(cmd, "ECHO", strlen(cmd))) {
-		resp = encodeBulkString(items[1], strlen(items[1]));
+		resp = encode_bulk_string(items[1], strlen(items[1]));
 	}
 	else {
 		printf("Invalid command\n");
