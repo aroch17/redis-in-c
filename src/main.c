@@ -188,20 +188,42 @@ char* process_resp_array(char* buf) {
 		}
 
 		ENTRY e, *ep;
-		e.key = items[1];
-		e.data = items[2];
+		// e.key must store copies of the key otherwise it gets corrupted when free_array_contents gets called
+		e.key = strdup(items[1]);
+		e.data = strdup(items[2]);
 		ep = hsearch(e, ENTER);
 		if (ep == NULL && errno == ENOMEM) {
 			printf("Max elements reached\n");
+			free(e.key);  
+			free(e.data);
 			return NULL;
 		}
 		
 		if (ep == NULL) {
 			printf("Failed to create entry\n");
+			free(e.key);  
+			free(e.data);
 			return NULL;
 		}
-		
+
 		resp = strdup(REDIS_OK);
+	}
+	else if (!strncasecmp(cmd, "GET", strlen(cmd))) {
+		if (!items[1]) {
+			printf("Incomplete command\n");
+			return NULL;
+		}
+
+		ENTRY e, *ep;
+		e.key = items[1];
+		ep = hsearch(e, FIND);
+		if (ep == NULL) {
+			printf("Key does not exist\n");
+			return strdup(REDIS_NULL_STRING);
+		}
+
+		char* val = (char*) ep->data;
+		resp = encode_bulk_string(val, strlen(val));
 	}
 	else {
 		printf("Invalid command\n");
