@@ -370,6 +370,7 @@ int main() {
 				// socket available for writing
 				else if (events[n].events == EPOLLOUT) {
 					send(events[n].data.fd, resps[n], strlen(resps[n]), 0);
+					free(resps[n]);
 					
 					// switch conn back to reading -> persistent connections
 					ev.events = EPOLLIN | EPOLLET;
