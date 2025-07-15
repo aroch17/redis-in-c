@@ -16,6 +16,7 @@
 #define MAX_EVENTS 10
 #define MAX_NUM_ELEM 128
 #define BUF_SIZE 4096
+#define SEC_TO_MS 1000
 #define DELIMITER_LEN 2
 #define IDENTIFIER_LEN 1
 #define NULL_TERMINATOR_LEN 1
@@ -240,6 +241,8 @@ char* process_resp_array(char* buf) {
 			return NULL;
 		}
 
+		time_t request_time = time(NULL);
+		printf("Request time: %ld\n", request_time);
 		ENTRY e, *ep;
 		e.key = items[1];
 		ep = hsearch(e, FIND);
@@ -248,8 +251,15 @@ char* process_resp_array(char* buf) {
 			return strdup(REDIS_NULL_STRING);
 		}
 
-		char* val = (char*) ep->data;
-		resp = encode_bulk_string(val, strlen(val));
+		r_val_t* val_object = (r_val_t*) ep->data;
+		double access_diff;
+		if (val_object->is_expiry_set && 
+			 (access_diff = difftime(request_time, val_object->creation_time) * SEC_TO_MS) >= val_object->expiry) {
+				resp = NULL;
+		}
+		else {
+			resp = encode_bulk_string(val_object->value, strlen(val_object->value));
+		}
 	}
 	else {
 		printf("Invalid command\n");
