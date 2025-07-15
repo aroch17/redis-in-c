@@ -31,8 +31,8 @@ enum REDIS_DATA_IDENTIFIER {
 
 typedef struct redis_value {
 	char* value;
-	time_t creation_time;
-	double expiry;
+	long creation_time;
+	long expiry;
 	int is_expiry_set;
 } r_val_t;
 
