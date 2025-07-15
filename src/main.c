@@ -195,10 +195,28 @@ char* process_resp_array(char* buf) {
 			return NULL;
 		}
 
+		r_val_t* val_object = malloc(sizeof(r_val_t));
+		val_object->value = strdup(items[2]);
+		val_object->creation_time = time(NULL);
+		printf("Creation time: %ld\n", val_object->creation_time);
+
+		if (items[3] && !strncasecmp(items[3], "px", strlen("px"))) {
+			double expiry_val = (double) strtol(items[4], NULL, 10);
+			if ((errno == ERANGE && (expiry_val == LONG_MAX || expiry_val == LONG_MIN)) || (errno != 0 && expiry_val == 0)) {
+				perror("strtol");
+				return NULL;
+			}
+			val_object->expiry = expiry_val;
+			val_object->is_expiry_set = 1;
+		}
+		else {
+			val_object->is_expiry_set = 0;
+		}
+
 		ENTRY e, *ep;
 		// e.key must store copies of the key otherwise it gets corrupted when free_array_contents gets called
 		e.key = strdup(items[1]);
-		e.data = strdup(items[2]);
+		e.data = (void*) val_object;
 		ep = hsearch(e, ENTER);
 		if (ep == NULL && errno == ENOMEM) {
 			printf("Max elements reached\n");
