@@ -20,7 +20,7 @@
 #define IDENTIFIER_LEN 1
 #define NULL_TERMINATOR_LEN 1
 #define REDIS_PONG "+PONG\r\n"
-#define REDIS_NULL_STRING "-1\r\n"
+#define REDIS_NULL_STRING "$-1\r\n"
 #define REDIS_OK "+OK\r\n"
 
 enum REDIS_DATA_IDENTIFIER {
