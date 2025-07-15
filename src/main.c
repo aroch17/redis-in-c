@@ -30,8 +30,9 @@ enum REDIS_DATA_IDENTIFIER {
 
 typedef struct redis_value {
 	char* value;
-	time_t creation_time,
+	time_t creation_time;
 	double expiry;
+	int is_expiry_set;
 } r_val_t;
 
 int set_nonblocking(int sockfd) {
