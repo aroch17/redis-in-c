@@ -11,6 +11,7 @@
 #include <limits.h>
 #include <ctype.h>
 #include <search.h>
+#include <time.h>
 
 #define MAX_EVENTS 10
 #define MAX_NUM_ELEM 128
@@ -26,6 +27,12 @@ enum REDIS_DATA_IDENTIFIER {
 	REDIS_BULK_STRING = '$',
 	REDIS_ARRAY = '*'
 };
+
+typedef struct redis_value {
+	char* value;
+	time_t creation_time,
+	double expiry;
+} r_val_t;
 
 int set_nonblocking(int sockfd) {
 	int flags, result;
