@@ -198,11 +198,12 @@ char* process_resp_array(char* buf) {
 
 		r_val_t* val_object = malloc(sizeof(r_val_t));
 		val_object->value = strdup(items[2]);
-		val_object->creation_time = time(NULL);
-		printf("Creation time: %ld\n", val_object->creation_time);
+		struct timespec ts;
+		clock_gettime(CLOCK_MONOTONIC, &ts);
+		val_object->creation_time = (ts.tv_sec * 1000) + (ts.tv_nsec) / 1000000;
 
 		if (items[3] && !strncasecmp(items[3], "px", strlen("px"))) {
-			double expiry_val = (double) strtol(items[4], NULL, 10);
+			long expiry_val = strtol(items[4], NULL, 10);
 			if ((errno == ERANGE && (expiry_val == LONG_MAX || expiry_val == LONG_MIN)) || (errno != 0 && expiry_val == 0)) {
 				perror("strtol");
 				return NULL;
@@ -241,8 +242,9 @@ char* process_resp_array(char* buf) {
 			return NULL;
 		}
 
-		time_t request_time = time(NULL);
-		printf("Request time: %ld\n", request_time);
+		struct timespec ts;
+		clock_gettime(CLOCK_MONOTONIC, &ts);
+		long request_time = (ts.tv_sec * 1000) + (ts.tv_nsec) / 1000000;
 		ENTRY e, *ep;
 		e.key = items[1];
 		ep = hsearch(e, FIND);
@@ -252,9 +254,9 @@ char* process_resp_array(char* buf) {
 		}
 
 		r_val_t* val_object = (r_val_t*) ep->data;
-		double access_diff;
 		if (val_object->is_expiry_set && 
-			 (access_diff = difftime(request_time, val_object->creation_time) * SEC_TO_MS) >= val_object->expiry) {
+			 (request_time - val_object->creation_time) >= val_object->expiry) {
+				printf("Expired\n");
 				resp = NULL;
 		}
 		else {
