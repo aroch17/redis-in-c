@@ -272,7 +272,7 @@ char* process_resp_array(char* buf) {
 	return resp;
 }
 
-int main() {
+int main(int argc, char** argv) {
 	// Disable output buffering
 	setbuf(stdout, NULL);
 	setbuf(stderr, NULL);
@@ -280,12 +280,23 @@ int main() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	printf("Logs from your program will appear here!\n");
 	
+	long port = 6379;
 	int server_fd, client_addr_len, client_fd, nfds;
 	struct sockaddr_in client_addr;
 	struct epoll_event ev, events[MAX_EVENTS];
 	char* resps[MAX_EVENTS];
 	// create key-value store
 	hcreate(MAX_NUM_ELEM);
+
+	if (argc >= 3) {
+		if (!strcmp(argv[1], "--port")) {
+			port = strtol(argv[2], NULL, 10);
+			if ((errno == ERANGE && (port == LONG_MAX || port == LONG_MIN)) || (errno != 0 && port == 0)) {
+				perror("strtol");
+				return 1;
+			}
+		}
+	}
 	
 	server_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (server_fd == -1) {
@@ -302,7 +313,7 @@ int main() {
 	}
 	
 	struct sockaddr_in serv_addr = { .sin_family = AF_INET ,
-									 .sin_port = htons(6379),
+									 .sin_port = htons(port),
 									 .sin_addr = { htonl(INADDR_ANY) },
 									};
 	
@@ -317,7 +328,7 @@ int main() {
 		return 1;
 	}
 
-	printf("Waiting for a client to connect...\n");
+	printf("Waiting for a client to connect on port %ld...\n", port);
 
 	int epoll_fd = epoll_create1(0);
 	if (epoll_fd == -1) {
