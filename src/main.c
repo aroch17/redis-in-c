@@ -263,6 +263,10 @@ char* process_resp_array(char* buf) {
 			resp = encode_bulk_string(val_object->value, strlen(val_object->value));
 		}
 	}
+	else if (!strncasecmp(cmd, "INFO", strlen(cmd))) {
+		char* info_resp = "role:master";
+		resp = encode_bulk_string(info_resp, strlen(info_resp));
+	}
 	else {
 		printf("Invalid command\n");
 		resp = NULL;
